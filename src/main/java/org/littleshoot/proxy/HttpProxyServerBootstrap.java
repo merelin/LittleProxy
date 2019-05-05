@@ -181,6 +181,8 @@ public interface HttpProxyServerBootstrap {
     HttpProxyServerBootstrap withManInTheMiddle(
             MitmManager mitmManager);
 
+    HttpProxyServerBootstrap withManInTheMiddleWithCertSniffing(MitmManager mitmManager);
+
     /**
      * <p>
      * Specify a {@link HttpFiltersSource} to use for filtering requests and/or

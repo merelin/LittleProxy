@@ -791,6 +791,17 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
         }
 
         @Override
+        public HttpProxyServerBootstrap withManInTheMiddleWithCertSniffing(MitmManager mitmManager) {
+            this.mitmManager = mitmManager;
+            if (this.sslEngineSource != null) {
+                LOG.warn("Enabled man in the middle with encrypted inbound connections. "
+                        + "These are mutually exclusive - encrypted inbound connections will be disabled.");
+                this.sslEngineSource = null;
+            }
+            return this;
+        }
+
+        @Override
         public HttpProxyServerBootstrap withFiltersSource(
                 HttpFiltersSource filtersSource) {
             this.filtersSource = filtersSource;

@@ -330,6 +330,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.github.ganskef</groupId>
+            <artifactId>littleproxy-mitm</artifactId>
+            <version>1.1.0</version>
+        </dependency>
+
     </dependencies>
 
     <dependencyManagement>
@@ -518,9 +524,9 @@
                             <shadedArtifactAttached>true</shadedArtifactAttached>
                             <shadedClassifierName>littleproxy-shade</shadedClassifierName>
                             <artifactSet>
-                                <excludes>
+                                <!--excludes>
                                     <exclude>org.bouncycastle:*</exclude>
-                                </excludes>
+                                </excludes-->
                             </artifactSet>
 
                             <filters>
