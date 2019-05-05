@@ -121,6 +121,74 @@ abstract class ProxyConnection<I extends HttpObject> extends
         }
     }
 
+    private io.netty.handler.codec.http.multipart.HttpPostRequestDecoder httpDecoder = null;
+
+    private void dumpObject(HttpObject httpObject) {
+        if (httpObject instanceof HttpMessage) {
+            System.out.println("MERELIN: message=" + httpObject);
+        }
+        if (httpObject instanceof HttpRequest) {
+            HttpRequest httpRequest = (HttpRequest) httpObject;
+            System.out.println("MERELIN: request=" + httpObject);
+            if (httpRequest.getMethod().name().equals("POST")) {
+                httpDecoder = new io.netty.handler.codec.http.multipart.HttpPostRequestDecoder(
+                        new io.netty.handler.codec.http.multipart.DefaultHttpDataFactory(true), httpRequest);
+                httpDecoder.setDiscardThreshold(0);
+            }
+        }
+        if (httpDecoder != null && httpDecoder.isMultipart() && httpObject instanceof HttpContent) {
+            HttpContent chunk = (HttpContent) httpObject;
+            httpDecoder.offer(chunk);
+
+            while (httpDecoder.hasNext()) {
+                io.netty.handler.codec.http.multipart.InterfaceHttpData data = httpDecoder.next();
+                if (data != null) {
+                    try {
+                        switch (data.getHttpDataType()) {
+                            case Attribute:
+                                break;
+                            case FileUpload:
+                                final io.netty.handler.codec.http.multipart.FileUpload fileUpload = (io.netty.handler.codec.http.multipart.FileUpload) data;
+                                System.out.println("MERELIN: fileUpload=" + fileUpload.getFilename());
+                                System.out.println("MERELIN: = <fileUpload>  =");
+                                System.out.println("MERELIN: = </fileUpload> =");
+                                try (java.nio.channels.FileChannel inputChannel = new java.io.FileInputStream(fileUpload.getFile()).getChannel()) {
+                                    java.nio.channels.WritableByteChannel out = new java.nio.channels.WritableByteChannel() {
+                                        public boolean isOpen() {
+                                            return true;
+                                        }
+
+                                        public void close() throws java.io.IOException {
+                                        }
+
+                                        public int write(java.nio.ByteBuffer src) throws java.io.IOException {
+                                            System.out.print(new String(src.array()));
+                                            return src.array().length;
+                                        }
+                                    };
+                                    java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+                                    for (int i = 0; i < inputChannel.size(); i++) {
+                                        inputChannel.transferTo(0, inputChannel.size(), out);
+                                    }
+                                }
+                                break;
+                        }
+                    } catch (java.io.IOException ex) {
+                        ex.printStackTrace();
+                    } finally {
+                        data.release();
+                    }
+                }
+            }
+
+            if (chunk instanceof LastHttpContent) {
+//                httpRequest = null;
+                httpDecoder.destroy();
+                httpDecoder = null;
+            }
+        }
+    }
+
     /**
      * Handles reading {@link HttpObject}s.
      * 
@@ -128,6 +196,7 @@ abstract class ProxyConnection<I extends HttpObject> extends
      */
     @SuppressWarnings("unchecked")
     private void readHTTP(HttpObject httpObject) {
+        dumpObject(httpObject);
         ConnectionState nextState = getCurrentState();
         switch (getCurrentState()) {
         case AWAITING_INITIAL:
